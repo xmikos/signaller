@@ -6,7 +6,7 @@ from setuptools import setup
 
 setup(
     name='Signaller',
-    version='1.0.0',
+    version='1.1.0',
     description='Signals and slots implementation with asyncio support',
     author='Michal Krenek (Mikos)',
     author_email='m.krenek@gmail.com',

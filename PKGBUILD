@@ -1,7 +1,7 @@
 # Maintainer: Michal Krenek (Mikos) <m.krenek@gmail.com>
 pkgname=python-signaller
 _pkgname=signaller
-pkgver=1.0.0
+pkgver=1.1.0
 pkgrel=1
 pkgdesc="Signals and slots implementation with asyncio support"
 arch=('any')

@@ -11,8 +11,25 @@ but it can be changed when creating signal with ``executor`` argument.
 """
 
 import asyncio, concurrent.futures, weakref, inspect, logging
+from functools import wraps
 
 logger = logging.getLogger(__name__)
+
+
+def autoconnect(cls):
+    """Class decorator for automatically connecting instance methods to signals"""
+    old_init = cls.__init__
+
+    @wraps(old_init)
+    def new_init(self, *args, **kwargs):
+        for name, method in inspect.getmembers(self, predicate=inspect.ismethod):
+            if hasattr(method, '_signals'):
+                for sig, sig_kwargs in method._signals.items():
+                    sig.connect(method, **sig_kwargs)
+        old_init(self, *args, **kwargs)
+
+    cls.__init__ = new_init
+    return cls
 
 
 class Reference:
@@ -109,10 +126,19 @@ class Signal:
     def connect(self, *args, weak=True, force_async=False):
         """Connect signal to slot (can be also used as decorator)"""
         def wrapper(func):
-            logger.info('Connecting signal {} to slot {}'.format(self, func))
-            self._slots.add(
-                Reference(func, callback=self.disconnect, weak=weak, force_async=force_async)
-            )
+            args = inspect.getfullargspec(func).args
+            if inspect.isfunction(func) and args and args[0] == 'self':
+                logger.debug('Marking instance method {} for autoconnect to signal {}'.format(
+                    func, self
+                ))
+                if not hasattr(func, '_signals'):
+                    func._signals = {}
+                func._signals[self] = {'weak': weak, 'force_async': force_async}
+            else:
+                logger.info('Connecting signal {} to slot {}'.format(self, func))
+                self._slots.add(
+                    Reference(func, callback=self.disconnect, weak=weak, force_async=force_async)
+                )
             return func
 
         # If there is one (and only one) positional argument and this argument is callable,
